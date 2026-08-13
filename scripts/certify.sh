@@ -84,7 +84,7 @@ run_phase BUILD npm run build || exit 1
 
 if (
   cd "${SOURCE_DIR}"
-  expected_version="$(node -p "require('./package.json').devDependencies?.supabase || '')"
+  expected_version="$(node -p 'require("./package.json").devDependencies?.supabase || ""')"
   actual_version="$(./node_modules/.bin/supabase --version)"
   [[ "${expected_version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
   [[ "${actual_version}" == "${expected_version}" ]]
