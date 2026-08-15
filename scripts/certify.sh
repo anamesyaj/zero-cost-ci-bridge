@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -u -o pipefail
 umask 077
+export NEXT_TELEMETRY_DISABLED=1
 
 SOURCE_DIR="${1:-${GITHUB_WORKSPACE}/workload}"
 ROOT="${RUNNER_TEMP}/transient-certification-${GITHUB_RUN_ID:-manual}-${GITHUB_RUN_ATTEMPT:-1}"
