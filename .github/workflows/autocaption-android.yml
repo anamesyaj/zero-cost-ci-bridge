@@ -33,8 +33,11 @@ jobs:
         run: python3 scripts/patch_caption_ui_v2.py
 
       - name: Apply responsive phone sheets patch
+        run: python3 scripts/patch_phone_sheets_v3.py
+
+      - name: Add mobile timeline delete
         run: |
-          python3 scripts/patch_phone_sheets_v3.py
+          python3 scripts/patch_mobile_delete_v4.py
           git -C upstream diff --check
           git -C upstream diff --stat
 
@@ -104,6 +107,7 @@ jobs:
           cp scripts/patch_caption_app.py stage/SOURCE-PATCH-ENGINE.py
           cp scripts/patch_caption_ui_v2.py stage/SOURCE-PATCH-UI.py
           cp scripts/patch_phone_sheets_v3.py stage/SOURCE-PATCH-PHONE-SHEETS.py
+          cp scripts/patch_mobile_delete_v4.py stage/SOURCE-PATCH-MOBILE-DELETE.py
           sha256sum stage/AutoCaption-Local-v3-phone-arm64.apk > stage/SHA256SUMS
           ls -lh stage
 
