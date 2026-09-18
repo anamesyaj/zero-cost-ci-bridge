@@ -159,7 +159,8 @@ def patch_start(s):
             }
         }
 
-        for project[index] in root.recents: Rectangle {\n            visible: index < 4;
+        for project[index] in root.recents: Rectangle {
+            visible: index < 4;
             height: 68px;
             border-radius: 12px;
             background: recent-touch.pressed ? Theme.field-active
