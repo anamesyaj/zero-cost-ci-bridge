@@ -3,11 +3,11 @@ name: Build AutoCaption Local APK
 on:
   push:
     branches:
-      - caption-app-v2-ui
+      - caption-app-v3-phone-sheets
   workflow_dispatch:
 
 concurrency:
-  group: autocaption-local-android-v2
+  group: autocaption-local-android-v3
   cancel-in-progress: true
 
 jobs:
@@ -30,8 +30,11 @@ jobs:
         run: python3 scripts/patch_caption_app.py
 
       - name: Apply mobile UI patch
+        run: python3 scripts/patch_caption_ui_v2.py
+
+      - name: Apply responsive phone sheets patch
         run: |
-          python3 scripts/patch_caption_ui_v2.py
+          python3 scripts/patch_phone_sheets_v3.py
           git -C upstream diff --check
           git -C upstream diff --stat
 
@@ -97,15 +100,16 @@ jobs:
           mkdir -p stage
           APK=$(find upstream/src/target/release/apk -maxdepth 1 -name '*.apk' | head -1)
           test -n "$APK"
-          cp "$APK" stage/AutoCaption-Local-v2-arm64.apk
+          cp "$APK" stage/AutoCaption-Local-v3-phone-arm64.apk
           cp scripts/patch_caption_app.py stage/SOURCE-PATCH-ENGINE.py
           cp scripts/patch_caption_ui_v2.py stage/SOURCE-PATCH-UI.py
-          sha256sum stage/AutoCaption-Local-v2-arm64.apk > stage/SHA256SUMS
+          cp scripts/patch_phone_sheets_v3.py stage/SOURCE-PATCH-PHONE-SHEETS.py
+          sha256sum stage/AutoCaption-Local-v3-phone-arm64.apk > stage/SHA256SUMS
           ls -lh stage
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: AutoCaption-Local-v2-android-arm64
+          name: AutoCaption-Local-v3-phone-arm64
           path: stage/*
           if-no-files-found: error
