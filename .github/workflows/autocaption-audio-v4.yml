@@ -1,0 +1,131 @@
+name: Build AutoCaption Local Audio v4
+
+on:
+  push:
+    branches:
+      - caption-app-audio-v4
+  workflow_dispatch:
+
+concurrency:
+  group: autocaption-local-android-audio-v4
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: Android arm64
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout build recipe
+        uses: actions/checkout@v4
+
+      - name: Fetch Concat source
+        run: |
+          git clone --filter=blob:none https://github.com/jub0t/Concat.git upstream
+          cd upstream
+          git checkout 152e96243a409d310c084c2ca1b3f3841bc6cf57
+
+      - name: Apply AutoCaption engine patch
+        run: python3 scripts/patch_caption_app.py
+
+      - name: Apply mobile UI patch
+        run: python3 scripts/patch_caption_ui_v2.py
+
+      - name: Apply responsive phone sheets
+        run: python3 scripts/patch_phone_sheets_v3.py
+
+      - name: Add mobile timeline delete
+        run: python3 scripts/patch_mobile_delete_v4.py
+
+      - name: Simplify phone title bar
+        run: python3 scripts/patch_phone_titlebar_v5.py
+
+      - name: Fix Delete and Android Back navigation
+        run: python3 scripts/patch_delete_back_v6.py
+
+      - name: Fix Android preview audio
+        run: |
+          python3 scripts/patch_android_audio_v7.py
+          git -C upstream diff --check
+          git -C upstream diff --stat
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add Android Rust target
+        working-directory: upstream/src
+        run: rustup target add aarch64-linux-android
+
+      - name: Install cargo-apk
+        uses: taiki-e/cache-cargo-install-action@v2
+        with:
+          tool: cargo-apk
+
+      - name: System build libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake libclang-dev
+
+      - name: Restore FFmpeg cache
+        id: ffmpeg-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: upstream/src/vendor/ffmpeg/aarch64-linux-android
+          key: autocaption-ffmpeg-arm64-${{ hashFiles('upstream/src/scripts/ffmpeg-mobile.sh') }}
+
+      - name: Build FFmpeg for Android
+        if: steps.ffmpeg-cache.outputs.cache-hit != 'true'
+        run: upstream/src/scripts/ffmpeg-mobile.sh aarch64-linux-android
+
+      - name: Save FFmpeg cache
+        if: steps.ffmpeg-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: upstream/src/vendor/ffmpeg/aarch64-linux-android
+          key: ${{ steps.ffmpeg-cache.outputs.cache-primary-key }}
+
+      - name: Prepare sherpa-onnx for Android
+        run: upstream/src/scripts/sherpa-mobile.sh aarch64-linux-android
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: upstream/src
+          key: autocaption-aarch64-linux-android
+
+      - name: Create signing key
+        run: |
+          keytool -genkeypair -v             -keystore "$RUNNER_TEMP/autocaption.keystore"             -storepass autocaption             -keypass autocaption             -alias autocaption             -keyalg RSA             -keysize 2048             -validity 10000             -dname "CN=AutoCaption Local, O=AutoCaption Local" >/dev/null 2>&1
+          echo "CARGO_APK_RELEASE_KEYSTORE=$RUNNER_TEMP/autocaption.keystore" >> "$GITHUB_ENV"
+          echo "CARGO_APK_RELEASE_KEYSTORE_PASSWORD=autocaption" >> "$GITHUB_ENV"
+
+      - name: Build APK
+        working-directory: upstream/src
+        run: |
+          set -o pipefail
+          eval "$(scripts/mobile-env.sh aarch64-linux-android)"
+          cargo apk build --release -p concat-android 2>&1 | tee build.log
+
+      - name: Stage APK and source patches
+        run: |
+          mkdir -p stage
+          APK=$(find upstream/src/target/release/apk -maxdepth 1 -name '*.apk' | head -1)
+          test -n "$APK"
+          cp "$APK" stage/AutoCaption-Local-phone-v4.apk
+          cp scripts/patch_caption_app.py stage/SOURCE-PATCH-ENGINE.py
+          cp scripts/patch_caption_ui_v2.py stage/SOURCE-PATCH-UI.py
+          cp scripts/patch_phone_sheets_v3.py stage/SOURCE-PATCH-PHONE-SHEETS.py
+          cp scripts/patch_mobile_delete_v4.py stage/SOURCE-PATCH-MOBILE-DELETE.py
+          cp scripts/patch_phone_titlebar_v5.py stage/SOURCE-PATCH-PHONE-TITLEBAR.py
+          cp scripts/patch_delete_back_v6.py stage/SOURCE-PATCH-DELETE-BACK.py
+          cp scripts/patch_android_audio_v7.py stage/SOURCE-PATCH-ANDROID-AUDIO.py
+          sha256sum stage/AutoCaption-Local-phone-v4.apk > stage/SHA256SUMS
+          ls -lh stage
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AutoCaption-Local-phone-v2
+          path: stage/*
+          if-no-files-found: error
