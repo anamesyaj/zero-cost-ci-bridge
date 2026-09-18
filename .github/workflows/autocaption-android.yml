@@ -112,7 +112,7 @@ jobs:
           cp scripts/patch_phone_sheets_v3.py stage/SOURCE-PATCH-PHONE-SHEETS.py
           cp scripts/patch_mobile_delete_v4.py stage/SOURCE-PATCH-MOBILE-DELETE.py
           cp scripts/patch_phone_titlebar_v5.py stage/SOURCE-PATCH-PHONE-TITLEBAR.py
-          sha256sum stage/AutoCaption-Local-v2-arm64.apk > stage/SHA256SUMS
+          sha256sum stage/AutoCaption-Local-phone-v2.apk > stage/SHA256SUMS
           ls -lh stage
 
       - name: Upload APK
