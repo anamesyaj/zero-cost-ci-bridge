@@ -45,8 +45,11 @@ jobs:
         run: python3 scripts/patch_delete_back_v6.py
 
       - name: Fix Android preview audio
+        run: python3 scripts/patch_android_audio_v7.py
+
+      - name: Fix Android caption rendering
         run: |
-          python3 scripts/patch_android_audio_v7.py
+          python3 scripts/patch_caption_render_v8.py
           git -C upstream diff --check
           git -C upstream diff --stat
 
@@ -112,7 +115,7 @@ jobs:
           mkdir -p stage
           APK=$(find upstream/src/target/release/apk -maxdepth 1 -name '*.apk' | head -1)
           test -n "$APK"
-          cp "$APK" stage/AutoCaption-Local-phone-v4.apk
+          cp "$APK" stage/AutoCaption-Local-phone-v5.apk
           cp scripts/patch_caption_app.py stage/SOURCE-PATCH-ENGINE.py
           cp scripts/patch_caption_ui_v2.py stage/SOURCE-PATCH-UI.py
           cp scripts/patch_phone_sheets_v3.py stage/SOURCE-PATCH-PHONE-SHEETS.py
@@ -120,12 +123,13 @@ jobs:
           cp scripts/patch_phone_titlebar_v5.py stage/SOURCE-PATCH-PHONE-TITLEBAR.py
           cp scripts/patch_delete_back_v6.py stage/SOURCE-PATCH-DELETE-BACK.py
           cp scripts/patch_android_audio_v7.py stage/SOURCE-PATCH-ANDROID-AUDIO.py
-          sha256sum stage/AutoCaption-Local-phone-v4.apk > stage/SHA256SUMS
+          cp scripts/patch_caption_render_v8.py stage/SOURCE-PATCH-CAPTION-RENDER.py
+          sha256sum stage/AutoCaption-Local-phone-v5.apk > stage/SHA256SUMS
           ls -lh stage
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: AutoCaption-Local-phone-v2
+          name: AutoCaption-Local-phone-v5
           path: stage/*
           if-no-files-found: error
