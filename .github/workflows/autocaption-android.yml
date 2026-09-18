@@ -30,8 +30,17 @@ jobs:
         run: python3 scripts/patch_caption_app.py
 
       - name: Apply mobile UI patch
+        run: python3 scripts/patch_caption_ui_v2.py
+
+      - name: Apply responsive phone sheets
+        run: python3 scripts/patch_phone_sheets_v3.py
+
+      - name: Add mobile timeline delete
+        run: python3 scripts/patch_mobile_delete_v4.py
+
+      - name: Simplify phone title bar
         run: |
-          python3 scripts/patch_caption_ui_v2.py
+          python3 scripts/patch_phone_titlebar_v5.py
           git -C upstream diff --check
           git -C upstream diff --stat
 
@@ -97,15 +106,18 @@ jobs:
           mkdir -p stage
           APK=$(find upstream/src/target/release/apk -maxdepth 1 -name '*.apk' | head -1)
           test -n "$APK"
-          cp "$APK" stage/AutoCaption-Local-v2-arm64.apk
+          cp "$APK" stage/AutoCaption-Local-phone-v2.apk
           cp scripts/patch_caption_app.py stage/SOURCE-PATCH-ENGINE.py
           cp scripts/patch_caption_ui_v2.py stage/SOURCE-PATCH-UI.py
+          cp scripts/patch_phone_sheets_v3.py stage/SOURCE-PATCH-PHONE-SHEETS.py
+          cp scripts/patch_mobile_delete_v4.py stage/SOURCE-PATCH-MOBILE-DELETE.py
+          cp scripts/patch_phone_titlebar_v5.py stage/SOURCE-PATCH-PHONE-TITLEBAR.py
           sha256sum stage/AutoCaption-Local-v2-arm64.apk > stage/SHA256SUMS
           ls -lh stage
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: AutoCaption-Local-v2-android-arm64
+          name: AutoCaption-Local-phone-v2
           path: stage/*
           if-no-files-found: error
